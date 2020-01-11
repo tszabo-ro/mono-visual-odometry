@@ -10,6 +10,7 @@ include_directories(
         crow/include
         ${OpenCV_INCLUDE_DIRS}
         include
+        cpp-toolkit/include
 )
 
 

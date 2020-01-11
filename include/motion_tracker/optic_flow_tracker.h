@@ -2,7 +2,6 @@
 #define OpticFlowTracker_h
 
 #include <motion_tracker/camera_frame.h>
-#include <motion_tracker/primitives.h>
 
 struct Projection
 {
