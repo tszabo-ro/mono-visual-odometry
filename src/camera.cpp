@@ -42,13 +42,31 @@ struct Camera::Internals
   const cv::Rect2f rotated_size;
 };
 
-Camera::Camera(double camera_angle)
-  : internals_(std::make_unique<Internals>(getCameraParams(camera_angle, cv::CAP_ANY)))
-{}
+Camera::Camera(CameraConfig config)
+  : config_(config)
+  , internals_(std::make_unique<Internals>(getCameraParams(config.roll, cv::CAP_ANY)))
+{
+  cv::Mat img;
 
-Camera::Camera(double camera_angle, const std::string& video_src)
-  : internals_(std::make_unique<Internals>(getCameraParams(camera_angle, video_src)))
-{}
+  internals_->capture_device->grab();
+  internals_->capture_device->retrieve(img);
+
+  config_.img_width = img.cols;
+  config_.img_height = img.rows;
+}
+
+Camera::Camera(CameraConfig config, const std::string& video_src)
+  : config_(config)
+  , internals_(std::make_unique<Internals>(getCameraParams(config.roll, video_src)))
+{
+  cv::Mat img;
+
+  internals_->capture_device->grab();
+  internals_->capture_device->retrieve(img);
+
+  config_.img_width = img.cols;
+  config_.img_height = img.rows;
+}
 
 Camera::~Camera() = default;
 
