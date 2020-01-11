@@ -22,6 +22,8 @@ add_executable(app
         src/camera.cpp
         src/camera_frame.cpp
 
+        src/optic_flow_tracker.cpp
+
         main.cpp
         )
 target_link_libraries(app ${Boost_LIBRARIES} dl)
