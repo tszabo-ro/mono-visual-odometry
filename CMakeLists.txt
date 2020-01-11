@@ -20,6 +20,7 @@ link_libraries(
 
 add_executable(app
         src/camera.cpp
+        src/camera_frame.cpp
 
         main.cpp
         )
