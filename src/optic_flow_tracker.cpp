@@ -19,7 +19,7 @@ static std::vector<cv::Point2f> findCorners(const cv::Mat& frame, unsigned int n
   points.reserve(num_points);
 
   const double min_distance = 20;
-  const double min_distance_sq = min_distance*min_distance;
+  const double min_distance_sq = min_distance * min_distance;
 
   std::vector<cv::Point2f> found_points;
   goodFeaturesToTrack(frame, found_points, num_points * 2, 0.00001, min_distance);
@@ -90,10 +90,22 @@ std::vector<OpticFlow> OpticFlowTracker::getFlowVectors(const Frame& frame)
   {
     if (status_values[index] == 1)
     {
-      optic_flow_vectors.emplace_back(
-        Point2f(internal_->last_points[index].x, internal_->last_points[index].y),
-        Vector2f(tracked_points[index].x - internal_->last_points[index].x, tracked_points[index].y - internal_->last_points[index].y)
-      );
+      int start_x = internal_->last_points[index].x;
+      int start_y = internal_->last_points[index].y;
+      int end_x = tracked_points[index].x;
+      int end_y = tracked_points[index].y;
+
+      if (start_x <= 0 || start_y <= 0 ||
+          end_x <= 0 || end_y <= 0 ||
+          start_x >= cropped_frame.data().cols || end_x >= cropped_frame.data().cols ||
+          start_y >= cropped_frame.data().rows || end_y >= cropped_frame.data().rows)
+      {
+        continue;
+      }
+
+        optic_flow_vectors.emplace_back(
+          Point2i(start_x, start_y), Vector2i(end_x - start_x, end_y - start_y)
+        );
       found_points.emplace_back(tracked_points[index]);
     }
   }

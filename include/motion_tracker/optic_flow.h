@@ -3,10 +3,10 @@
 
 struct OpticFlow
 {
-  OpticFlow(Point2f anchor, Vector2f flow): anchor(anchor), flow(flow) {}
+  OpticFlow(Point2i anchor, Vector2i flow): anchor(anchor), flow(flow) {}
 
-  Point2f anchor;
-  Vector2f flow;
+  Point2i anchor;
+  Vector2i flow;
 };
 
 #endif
