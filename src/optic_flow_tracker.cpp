@@ -66,7 +66,7 @@ OpticFlowTracker::OpticFlowTracker(const Frame& start_frame, Rect<unsigned int> 
 
 OpticFlowTracker::~OpticFlowTracker() = default;
 
-std::vector<OpticFlow> OpticFlowTracker::getFlowVectors(const Frame& frame, Projection proj)
+std::vector<OpticFlow> OpticFlowTracker::getFlowVectors(const Frame& frame)
 {
   Frame cropped_frame = frame.crop(roi);
 
@@ -102,17 +102,4 @@ std::vector<OpticFlow> OpticFlowTracker::getFlowVectors(const Frame& frame, Proj
   internal_->last_frame = std::move(cropped_frame);
 
   return optic_flow_vectors;
-}
-
-std::vector<Point2f> OpticFlowTracker::getTrackedPoints() const
-{
-  std::vector<Point2f> points;
-  points.reserve(internal_->last_points.size());
-
-  for (const auto& pt : internal_->last_points)
-  {
-    points.emplace_back(pt.x, pt.y);
-  }
-
-  return points;
 }

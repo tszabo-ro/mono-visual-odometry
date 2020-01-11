@@ -2,19 +2,7 @@
 #define OpticFlowTracker_h
 
 #include <motion_tracker/camera_frame.h>
-
-struct Projection
-{
-
-};
-
-struct OpticFlow
-{
-  OpticFlow(Point2f anchor, Vector2f flow): anchor(anchor), flow(flow) {}
-
-  Point2f anchor;
-  Vector2f flow;
-};
+#include <motion_tracker/optic_flow.h>
 
 class OpticFlowTracker
 {
@@ -22,8 +10,7 @@ public:
   OpticFlowTracker(const Frame& start_frame, Rect<unsigned int> roi, size_t num_points);
   ~OpticFlowTracker();
 
-  [[nodiscard]] std::vector<OpticFlow> getFlowVectors(const Frame& frame, Projection proj = {});
-  [[nodiscard]] std::vector<Point2f> getTrackedPoints() const;
+  [[nodiscard]] std::vector<OpticFlow> getFlowVectors(const Frame& frame);
 
 private:
   const Rect<unsigned int> roi;
