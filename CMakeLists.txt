@@ -25,6 +25,7 @@ add_executable(app
 
         src/optic_flow_tracker.cpp
 
+        cpp-toolkit/src/thread_pool.cpp
         main.cpp
         )
 target_link_libraries(app ${Boost_LIBRARIES} dl)
