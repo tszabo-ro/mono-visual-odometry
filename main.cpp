@@ -6,8 +6,11 @@
 
 #include <motion_tracker/camera/camera.h>
 #include <motion_tracker/optic_flow_tracker.h>
+#include <motion_tracker/motion_estimation.h>
 
 #include <cpp-toolkit/thread_pool.h>
+#include <cpp-toolkit/moving_average.h>
+#include <motion_tracker/web_viewer.h>
 
 static std::vector<cv::Scalar> color_data;
 
@@ -44,15 +47,15 @@ cv::Mat mark(const cv::Mat& frame, const std::vector<Point2f>& points)
   return img;
 }
 
-cv::Mat mark(const cv::Mat& frame, const std::vector<OpticFlow>& flow_pairs, Vector2f offset = Vector2f(0,0))
+cv::Mat mark(const cv::Mat& frame, const std::vector<OpticFlow>& flow_pairs, Vector2f offset = Vector2f(0, 0))
 {
   cv::Mat mask = cv::Mat::zeros(frame.size(), frame.type());
 
   size_t i = 0;
   for (const auto& flow : flow_pairs)
   {
-    const auto start = flow.anchor + offset;
-    const auto end = flow.anchor + flow.flow + offset;
+    const auto start = flow.start + offset;
+    const auto end = flow.end + offset;
 
     cv::Point start_point(start.x, start.y);
     cv::Point end_point(end.x, end.y);
@@ -67,7 +70,12 @@ cv::Mat mark(const cv::Mat& frame, const std::vector<OpticFlow>& flow_pairs, Vec
 
 int main()
 {
-  Camera cam(-90, "videos/curvy.mp4");
+//  CameraConfig camera_conf(85*M_PI/180, 55*M_PI/180, 1080, 1920, -90*M_PI/180.0, 0, 0.2);
+  CameraConfig camera_conf(85*M_PI/180, 55*M_PI/180, 640, 480, 0*M_PI/180.0, 0, 0.2);
+  Camera cam(camera_conf, CameraCalibration("calib.json"), 0);
+
+  WebViewer viewer("lo0");
+  viewer.run(8080);
 
   const char *window_name = "img";
   namedWindow(window_name, cv::WINDOW_AUTOSIZE);
@@ -75,63 +83,58 @@ int main()
   auto initial_frame = cam.grab()->toGray();
 
   auto size_x = initial_frame.data().cols;
-  auto size_y = initial_frame.data().rows;
 
   constexpr size_t num_tracked_points = 200;
 
-  OpticFlowTracker tracker_top(initial_frame, Rect<unsigned int>(0, 0, size_x, 600), num_tracked_points);
-  OpticFlowTracker tracker_bottom(initial_frame, Rect<unsigned int>(0, 900, size_x, 1920), num_tracked_points);
+  OpticFlowTracker tracker_top(initial_frame, Rect<unsigned int>(0, 0, size_x, 240), num_tracked_points);
+  OpticFlowTracker tracker_bottom(initial_frame, Rect<unsigned int>(0, 241, size_x, 480), num_tracked_points);
 
-  Vector2f bottom_offset(0, 900);
-
-  auto ref_time = std::chrono::system_clock::now();
-  size_t frame_count = 0;
-
+  Vector2f bottom_offset(0, 240);
   ThreadPool workers(4);
 
-  while (true)
+  MovingAverage<double, 3> turn_rate_filter;
+  MovingAverage<double, 3> linear_speed_filter;
+
+  double total_turn = 0;
+  double total_dist = 0;
+
+  while (viewer.running())
   {
+    auto ref_time = std::chrono::system_clock::now();
+
     auto frame = cam.grab();
     if (!frame.has_value())
     {
       break;
     }
-
+    cv::imwrite("debug1.jpg", frame->data(), {cv::IMWRITE_JPEG_QUALITY, 30});
     auto gray_frame = frame->toGray();
 
-    std::packaged_task<std::vector<OpticFlow>()> flow_top_task(
-      [&tracker_top, &gray_frame]()
-        {
-          return tracker_top.getFlowVectors(gray_frame);
-        });
+    auto flow_top_task = tracker_top.packageCalculation(gray_frame);
+    auto flow_bottom_task = tracker_bottom.packageCalculation(gray_frame);
 
-    std::packaged_task<std::vector<OpticFlow>()> flow_bottom_task(
-      [&tracker_bottom, &gray_frame]()
-        {
-          return tracker_bottom.getFlowVectors(gray_frame);
-        });
+    workers.addWork([&flow_top_task](){ flow_top_task(); });
+    workers.addWork([&flow_bottom_task](){ flow_bottom_task(); });
 
-    workers.addWork([&flow_top_task]() { flow_top_task(); });
-    workers.addWork([&flow_bottom_task]() { flow_bottom_task(); });
+    auto flow_top = flow_top_task.get_future().get();
+    auto flow_bottom = flow_bottom_task.get_future().get();
 
-    auto flow_top = flow_top_task.get_future();
-    auto flow_bottom = flow_bottom_task.get_future();
+    auto disp_top = mark(frame->data(), flow_top);
+    auto disp = mark(disp_top, flow_bottom, bottom_offset);
 
-    auto disp_top = mark(frame->data(), flow_top.get());
-    auto disp = mark(disp_top, flow_bottom.get(), bottom_offset);
+    double yaw_speed = turn_rate_filter.push(getTurnRateFromFlow(cam.config(), flow_top));
+    double linear_speed = linear_speed_filter.push(getSpeedFromFlow(cam.config(), flow_bottom, yaw_speed));
 
-    imshow(window_name, disp);
-    cv::waitKey(1);
 
-    ++frame_count;
+    double dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - ref_time).count() / 1000.0;
+    total_turn += yaw_speed * dt;
+    total_dist += linear_speed * dt;
 
-    if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - ref_time).count() >= 999)
-    {
-      printf("FPS: %zu. Frame size: %d/%d\n", frame_count, size_x, size_y);
-      frame_count = 0;
-      ref_time = std::chrono::system_clock::now();
-    }
+    viewer.updateFrame(disp, {linear_speed, 1.0 / dt, yaw_speed});
+    printf("FPS: %.3f Yaw speed: %.5f [deg/s] linear: %.3f [m/s] total: %.2f [deg] %.2f [m]\n", 1.0 / dt, yaw_speed * 180 / M_PI, linear_speed, total_turn*180/M_PI, total_dist);
   }
+
+  printf("Total heading change: %.2f deg\n", total_turn*180/M_PI);
 
   return 0;
 }
