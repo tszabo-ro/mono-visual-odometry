@@ -1,5 +1,6 @@
 #include <motion_tracker/camera_frame.h>
 #include <opencv2/imgproc.hpp>
+#include <cmath>
 
 Frame Frame::toGray() const
 {
@@ -36,4 +37,16 @@ Frame Frame::crop(unsigned int start_x, unsigned int start_y, unsigned int end_x
   }
 
   return Frame(data_(roi));
+}
+
+double azimuthFromImage(const CameraConfig& params, unsigned int u)
+{
+  double azimuth = atan2(2*u - params.img_width, params.focal_length);
+//  printf("azimuth: %u / %zu-> %2f [deg]\n", u, params.img_width, azimuth*180/M_PI);
+  return azimuth;
+}
+
+double elevationFromImage(const CameraConfig& params, unsigned int v)
+{
+  return atan2(2*v - params.img_height, params.focal_length);
 }
