@@ -20,6 +20,11 @@ static std::tuple<std::unique_ptr<cv::VideoCapture>, cv::Mat, cv::Rect2f> getCam
   rot.at<double>(0, 2) += result_frame_size.width / 2.0 - frame.cols / 2.0;
   rot.at<double>(1, 2) += result_frame_size.height / 2.0 - frame.rows / 2.0;
 
+  result_frame_size.x = 2*std::abs(result_frame_size.x);
+  result_frame_size.y = 2*std::abs(result_frame_size.y);
+
+  printf("Cam angle: %.3f Rotated size: %.3f/%.3f\n", cam_angle, result_frame_size.x, result_frame_size.y);
+
   return std::tuple<std::unique_ptr<cv::VideoCapture>, cv::Mat, cv::Rect2f>(std::move(capture_device), std::move(rot), std::move(result_frame_size));
 }
 
@@ -44,28 +49,17 @@ struct Camera::Internals
 
 Camera::Camera(CameraConfig config)
   : config_(config)
-  , internals_(std::make_unique<Internals>(getCameraParams(config.roll, cv::CAP_ANY)))
+  , internals_(std::make_unique<Internals>(getCameraParams(config.camera_roll*180/M_PI, cv::CAP_ANY)))
 {
-  cv::Mat img;
-
-  internals_->capture_device->grab();
-  internals_->capture_device->retrieve(img);
-
-  config_.img_width = img.cols;
-  config_.img_height = img.rows;
+  config_ = CameraConfig(config.v_fov, config.h_fov, internals_->rotated_size.x, internals_->rotated_size.y, config.camera_roll, config.camera_pitch, config.ground_height);
 }
 
 Camera::Camera(CameraConfig config, const std::string& video_src)
   : config_(config)
-  , internals_(std::make_unique<Internals>(getCameraParams(config.roll, video_src)))
+  , internals_(std::make_unique<Internals>(getCameraParams(config.camera_roll*180/M_PI, video_src)))
 {
-  cv::Mat img;
-
-  internals_->capture_device->grab();
-  internals_->capture_device->retrieve(img);
-
-  config_.img_width = img.cols;
-  config_.img_height = img.rows;
+  config_ = CameraConfig(config.v_fov, config.h_fov, internals_->rotated_size.x, internals_->rotated_size.y, config.camera_roll, config.camera_pitch, config.ground_height);
+  printf("Camera: vFov: %.1f hFov: %.1f w: %zu h: %zu\n", config_.v_fov*180/M_PI, config_.h_fov*180/M_PI, config_.img_width, config_.img_height);
 }
 
 Camera::~Camera() = default;

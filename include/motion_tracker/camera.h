@@ -4,20 +4,7 @@
 #include <memory>
 #include <optional>
 #include <motion_tracker/camera_frame.h>
-
-struct CameraConfig
-{
-  double v_fov;
-  double h_fov;
-
-  double roll;
-  double pitch;
-
-  double ground_height;
-
-  size_t img_width;
-  size_t img_height;
-};
+#include <motion_tracker/camera_config.h>
 
 class Camera
 {
