@@ -24,6 +24,7 @@ add_executable(app
         src/camera_frame.cpp
 
         src/optic_flow_tracker.cpp
+        src/motion_estimation.cpp
 
         cpp-toolkit/src/thread_pool.cpp
         main.cpp

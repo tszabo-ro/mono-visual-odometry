@@ -2,6 +2,7 @@
 #define CameraConfig_h
 
 #include <cmath>
+#include <cstdio>
 
 struct CameraConfig
 {

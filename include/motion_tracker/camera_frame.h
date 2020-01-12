@@ -31,7 +31,4 @@ private:
   cv::Mat data_;
 };
 
-double azimuthFromImage(const CameraConfig& params, unsigned int u);
-double elevationFromImage(const CameraConfig& params, unsigned int v);
-
 #endif
