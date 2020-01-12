@@ -66,7 +66,7 @@ OpticFlowTracker::OpticFlowTracker(const Frame& start_frame, Rect<unsigned int> 
 
 OpticFlowTracker::~OpticFlowTracker() = default;
 
-std::vector<OpticFlow> OpticFlowTracker::getFlowVectors(const Frame& frame)
+std::vector<OpticFlow> OpticFlowTracker::calculate(const class Frame & frame)
 {
   Frame cropped_frame = frame.crop(roi);
 
