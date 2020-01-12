@@ -107,7 +107,7 @@ std::vector<OpticFlow> OpticFlowTracker::calculate(const class Frame & frame)
 
         optic_flow_vectors.emplace_back(
           Point2i(start_x, start_y),
-          Vector2i(end_x - start_x, end_y - start_y),
+          Point2i(end_x, end_y),
           frame_time_difference
         );
       found_points.emplace_back(tracked_points[index]);
