@@ -86,6 +86,8 @@ std::vector<OpticFlow> OpticFlowTracker::getFlowVectors(const Frame& frame)
   std::vector<OpticFlow> optic_flow_vectors;
   optic_flow_vectors.reserve(tracked_points.size());
 
+  double frame_time_difference = std::chrono::duration_cast<std::chrono::microseconds>(frame.stamp() - internal_->last_frame.stamp()).count()/1000000.0;
+
   for (size_t index = 0; index < status_values.size(); ++index)
   {
     if (status_values[index] == 1)
@@ -104,7 +106,9 @@ std::vector<OpticFlow> OpticFlowTracker::getFlowVectors(const Frame& frame)
       }
 
         optic_flow_vectors.emplace_back(
-          Point2i(start_x, start_y), Vector2i(end_x - start_x, end_y - start_y)
+          Point2i(start_x, start_y),
+          Vector2i(end_x - start_x, end_y - start_y),
+          frame_time_difference
         );
       found_points.emplace_back(tracked_points[index]);
     }
