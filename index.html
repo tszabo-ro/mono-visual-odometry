@@ -1,0 +1,155 @@
+<!DOCTYPE HTML>
+
+<html>
+   <head>
+      <title>Cam</title>
+      <style>
+          body {
+              font-family: Helvetica Neue, Arial, sans-serif;
+              text-align: left;
+          }
+
+          .wrapper {
+              max-width: 800px;
+              margin: 50px auto;
+          }
+
+          h1 {
+              font-weight: 200;
+              font-size: 3em;
+              margin: 0 0 0.1em 0;
+          }
+
+          h2 {
+              font-weight: 200;
+              font-size: 0.9em;
+              margin: 0 0 50px;
+              color: #999;
+          }
+
+          a {
+              margin-top: 50px;
+              display: block;
+              color: #3e95cd;
+          }
+      </style>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.bundle.min.js" ></script>
+      <script type = "text/javascript">
+        function addValues(values)  {
+            let x = parseFloat(values.x);
+            let y = parseFloat(values.y);
+            let th = parseFloat(values.th);
+
+            window.chart.data.x.push(x);
+            window.chart.data.y.push(y);
+            window.chart.data.th.push(th);
+
+
+            while (window.chart.data.x.length > window.chart.config.nPoints) {
+                window.chart.data.x.shift();
+            }
+            while (window.chart.data.y.length > window.chart.config.nPoints) {
+                window.chart.data.y.shift();
+            }
+            while (window.chart.data.th.length > window.chart.config.nPoints) {
+                window.chart.data.th.shift();
+            }
+
+            window.chart.chart.update();
+            let vel_data = document.getElementById('vel_data');
+            vel_data.innerHTML = "Vx: " + x + "<br />Vy:" + y + "<br />Vth: " + th;
+        }
+
+        function connectWS() {
+            window.img_ws = new WebSocket("ws://${SERVER_ADDR}:8080/ws");
+            window.img_ws.binaryType = "arraybuffer";
+
+            window.img_ws.onopen = function() {
+                console.log("Websocket is open");
+            };
+
+            window.img_ws.onmessage = function(msg) {
+                var json = JSON.parse(msg.data);
+                image.src = 'data:image/png;base64,' + json['img'];
+
+                addValues(json['estimates']);
+            };
+
+            window.img_ws.onclose = function() {
+                console.log("Connection is closed...");
+            };
+        }
+
+        function initChart() {
+            var ctx = document.getElementById('vel_chart');
+
+            window.chart = {
+                config: {
+                    nPoints: 50,
+                },
+                data: {
+                  x: [0],
+                  y: [0],
+                  th: [0],
+                },
+                chart: new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [
+                            {
+                                data: [0],
+                                label: 'vX',
+                                borderColor: "#F00",
+                                fill: false
+                            },
+                            {
+                                data: [0],
+                                label: 'vY',
+                                borderColor: "#0F0",
+                                fill: false
+                            },
+                            {
+                                data: [0],
+                                label: 'vTh',
+                                borderColor: "#00F",
+                                fill: false
+                            },
+                        ],
+                        labels: Array(40).fill(undefined).map((n, i) => i)
+                    },
+                    options: {
+                        animation: {
+                            duration: 0, // general animation time
+                        },
+                        hover: {
+                            animationDuration: 0, // duration of animations when hovering an item
+                        },
+                        responsiveAnimationDuration: 0, // animation duration after a resize
+
+                        scales: {
+                            yAxes: [{
+                                ticks: {
+                                    suggestedMin: -10,
+                                    suggestedMax: 10
+                                }
+                            }]
+                        }
+                    },
+                })
+            }
+            window.chart.chart.data.datasets[0].data = window.chart.data.x;
+            window.chart.chart.data.datasets[1].data = window.chart.data.y;
+            window.chart.chart.data.datasets[2].data = window.chart.data.th;
+            window.chart.chart.data.labels = Array(window.chart.config.nPoints).fill(undefined).map((n, i) => i)
+        }
+      </script>
+   </head>
+
+   <body onload="initChart(); connectWS();">
+        <div class="wrapper">
+            <img style="display: block; margin-left: auto; margin-right: auto; width: 40%;" id="image" />
+            <div id="vel_data"></div>
+            <canvas id="vel_chart" width="1600" height="900"></canvas>
+        </div>
+   </body>
+</html>

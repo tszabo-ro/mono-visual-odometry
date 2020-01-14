@@ -36,6 +36,8 @@ add_executable(app
 
         external/cpp-toolkit/src/thread_pool.cpp
 
+        src/web_viewer.cpp
+
         main.cpp
         )
 
