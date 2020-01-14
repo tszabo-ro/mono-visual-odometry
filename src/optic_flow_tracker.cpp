@@ -70,7 +70,17 @@ std::vector<OpticFlow> OpticFlowTracker::calculate(const class Frame & frame)
 {
   Frame cropped_frame = frame.crop(roi);
 
+  if (!internal_->last_frame.isCompatible(cropped_frame.data()))
+  {
+    return {};
+  }
+
   auto start_points = findCorners(cropped_frame.data(), num_tracked_points, internal_->last_points);
+
+  if (start_points.size() == 0)
+  {
+    return {};
+  }
 
   std::vector<uchar> status_values;
   std::vector<float> err;
@@ -78,7 +88,11 @@ std::vector<OpticFlow> OpticFlowTracker::calculate(const class Frame & frame)
   std::vector<cv::Point2f> tracked_points;
 
   cv::TermCriteria criteria = cv::TermCriteria((cv::TermCriteria::COUNT) + (cv::TermCriteria::EPS), 20, 0.05);
-  cv::calcOpticalFlowPyrLK(internal_->last_frame.data(), cropped_frame.data(), start_points, tracked_points, status_values, err, cv::Size(30, 30), 1, criteria);
+  cv::calcOpticalFlowPyrLK(
+    internal_->last_frame.data(), cropped_frame.data(),
+    start_points, tracked_points,
+    status_values, err,
+    cv::Size(30, 30), 1, criteria);
 
   std::vector<cv::Point2f> found_points;
   found_points.reserve(tracked_points.size());
