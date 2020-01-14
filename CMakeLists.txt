@@ -32,6 +32,7 @@ add_executable(app
 
         main.cpp
         )
+
 target_link_libraries(app ${Boost_LIBRARIES} dl)
 
 add_executable(calibration
