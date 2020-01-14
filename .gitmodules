@@ -4,3 +4,6 @@
 [submodule "external/cpp-toolkit"]
 	path = external/cpp-toolkit
 	url = https://github.com/tszabo-ro/cpp-toolkit.git
+[submodule "external/crow"]
+	path = external/crow
+	url = https://github.com/tszabo-ro/crow.git

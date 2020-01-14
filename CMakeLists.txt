@@ -13,6 +13,7 @@ include_directories(
 
         external/cpp-toolkit/include
         external/json/include
+        external/crow/include
 )
 
 
