@@ -6,8 +6,8 @@
 #include <opencv2/imgproc.hpp>
 
 #include <motion_tracker/camera/camera.h>
+#include <motion_tracker/camera/camera_calibration.h>
 
-#include <cpp-toolkit/thread_pool.h>
 #include <opencv2/calib3d.hpp>
 #include <nlohmann/json.hpp>
 
@@ -16,16 +16,6 @@ enum Pattern
   Chessboard,
   CircleGrid,
   AsymmetricCircleGrid
-};
-
-struct CameraCalibration
-{
-  cv::Mat camera_matrix;
-  cv::Mat dist_coeffs;
-  std::vector<cv::Mat> rvecs;
-  std::vector<cv::Mat> tvecs;
-
-  double total_error;
 };
 
 static std::vector<cv::Point3f> getGridPattern(const cv::Size& board_size, float element_size)
@@ -124,49 +114,9 @@ static std::optional<CameraCalibration> runCalibration(const cv::Size& board_siz
   return std::optional<CameraCalibration>(calibration);
 }
 
-static std::vector<std::vector<double>> mat2stlVec(const cv::Mat& mat)
-{
-  assert(mat.channels() == 1);
-
-  std::vector<std::vector<double>> data;
-  data.reserve(mat.rows);
-
-  for (size_t i = 0; i < static_cast<size_t>(mat.rows); ++i)
-  {
-    std::vector<double> row;
-    row.reserve(mat.cols);
-
-    for (size_t j = 0; j < static_cast<size_t>(mat.cols); ++j)
-    {
-      row.emplace_back(mat.at<double>(i,j));
-    }
-    data.emplace_back(std::move(row));
-  }
-
-  return data;
-}
-
 static void saveCameraParams(const std::string file_name, const CameraCalibration& calibration, size_t n_frames,
   Pattern calib_pattern, const cv::Size& image_size)
 {
-  std::vector<std::vector<double>> camera_matrix = mat2stlVec(calibration.camera_matrix);
-  std::vector<std::vector<double>> dist_coeffs = mat2stlVec(calibration.dist_coeffs);
-
-  std::vector<std::vector<std::vector<double>>> rvecs;
-  rvecs.reserve(calibration.rvecs.size());
-  for (const auto& rvec : calibration.rvecs)
-  {
-    rvecs.emplace_back(mat2stlVec(rvec));
-  }
-
-  std::vector<std::vector<std::vector<double>>> tvecs;
-  tvecs.reserve(calibration.tvecs.size());
-  for (const auto& tvec : calibration.tvecs)
-  {
-    rvecs.emplace_back(mat2stlVec(tvec));
-  }
-
-
   nlohmann::json calib =
     {
       {"meta_data",
@@ -178,13 +128,7 @@ static void saveCameraParams(const std::string file_name, const CameraCalibratio
                         {"pattern_height", image_size.height}
                       }
       },
-      {"calibration", {
-                        {"camera_matrix", nlohmann::json(camera_matrix)},
-                        {"dist_coeffs", nlohmann::json(dist_coeffs)},
-                        {"rvecs", nlohmann::json(rvecs)},
-                        {"tvecs", nlohmann::json(tvecs)},
-                        {"calibration_error", calibration.total_error}
-                      }}
+      {"calibration", calibration.dump()}
     };
 
   std::ofstream calib_file(file_name);

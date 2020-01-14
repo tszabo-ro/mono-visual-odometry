@@ -12,19 +12,24 @@ include_directories(
         include
 
         external/cpp-toolkit/include
-        external/json/single_include
+        external/json/include
 )
 
 
 link_libraries(
         ${LIBRARIES}
-        ${OpenCV_LIBS})
+        ${OpenCV_LIBS}
+)
 
-
-add_executable(app
+add_library(camera
         src/camera/camera.cpp
         src/camera/camera_frame.cpp
+        src/camera/camera_calibration.cpp
+        )
 
+target_link_libraries(camera ${Boost_LIBRARIES})
+
+add_executable(app
         src/optic_flow_tracker.cpp
         src/motion_estimation.cpp
 
@@ -33,12 +38,10 @@ add_executable(app
         main.cpp
         )
 
-target_link_libraries(app ${Boost_LIBRARIES} dl)
+target_link_libraries(app ${Boost_LIBRARIES} camera dl)
 
 add_executable(calibration
         calibrate_camera.cpp
-        src/camera/camera.cpp
-        src/camera/camera_frame.cpp
         )
-target_link_libraries(calibration ${Boost_LIBRARIES} dl)
+target_link_libraries(calibration ${Boost_LIBRARIES} camera dl)
 
