@@ -1,4 +1,4 @@
-#include <motion_tracker/camera.h>
+#include <motion_tracker/camera/camera.h>
 
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc/imgproc.hpp>

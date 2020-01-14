@@ -22,8 +22,8 @@ link_libraries(
 
 
 add_executable(app
-        src/camera.cpp
-        src/camera_frame.cpp
+        src/camera/camera.cpp
+        src/camera/camera_frame.cpp
 
         src/optic_flow_tracker.cpp
         src/motion_estimation.cpp
@@ -36,9 +36,9 @@ add_executable(app
 target_link_libraries(app ${Boost_LIBRARIES} dl)
 
 add_executable(calibration
-        src/calibrate_camera.cpp
-        src/camera.cpp
-        src/camera_frame.cpp
+        calibrate_camera.cpp
+        src/camera/camera.cpp
+        src/camera/camera_frame.cpp
         )
 target_link_libraries(calibration ${Boost_LIBRARIES} dl)
 

@@ -3,8 +3,8 @@
 
 #include <memory>
 #include <optional>
-#include <motion_tracker/camera_frame.h>
-#include <motion_tracker/camera_config.h>
+#include <motion_tracker/camera/camera_frame.h>
+#include <motion_tracker/camera/camera_config.h>
 
 class Camera
 {

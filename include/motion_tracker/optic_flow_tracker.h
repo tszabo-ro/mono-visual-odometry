@@ -1,7 +1,7 @@
 #ifndef OpticFlowTracker_h
 #define OpticFlowTracker_h
 
-#include <motion_tracker/camera_frame.h>
+#include <motion_tracker/camera/camera_frame.h>
 #include <motion_tracker/optic_flow.h>
 #include <future>
 

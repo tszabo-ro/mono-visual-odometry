@@ -5,7 +5,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include <motion_tracker/camera.h>
+#include <motion_tracker/camera/camera.h>
 
 #include <cpp-toolkit/thread_pool.h>
 #include <opencv2/calib3d.hpp>

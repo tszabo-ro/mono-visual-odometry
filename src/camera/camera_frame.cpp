@@ -1,4 +1,4 @@
-#include <motion_tracker/camera_frame.h>
+#include <motion_tracker/camera/camera_frame.h>
 #include <opencv2/imgproc.hpp>
 #include <cmath>
 

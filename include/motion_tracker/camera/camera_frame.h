@@ -7,7 +7,7 @@
 #include <cpp-toolkit/primitives_2d.h>
 #include <chrono>
 
-#include <motion_tracker/camera_config.h>
+#include <motion_tracker/camera/camera_config.h>
 
 class Frame
 {

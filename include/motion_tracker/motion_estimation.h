@@ -2,7 +2,7 @@
 #define MotionEstimator_h
 
 #include <motion_tracker/optic_flow.h>
-#include <motion_tracker/camera_config.h>
+#include <motion_tracker/camera/camera_config.h>
 #include <vector>
 #include <tuple>
 
