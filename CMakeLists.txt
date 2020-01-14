@@ -7,10 +7,12 @@ find_package(Boost REQUIRED COMPONENTS system thread)
 
 include_directories(
         ${Boost_INCLUDE_DIRS}
-        crow/include
         ${OpenCV_INCLUDE_DIRS}
+
         include
-        cpp-toolkit/include
+
+        external/cpp-toolkit/include
+        external/json/single_include
 )
 
 
@@ -26,7 +28,16 @@ add_executable(app
         src/optic_flow_tracker.cpp
         src/motion_estimation.cpp
 
-        cpp-toolkit/src/thread_pool.cpp
+        external/cpp-toolkit/src/thread_pool.cpp
+
         main.cpp
         )
 target_link_libraries(app ${Boost_LIBRARIES} dl)
+
+add_executable(calibration
+        camera_calibration/camera_calibration.cpp
+        src/camera.cpp
+        src/camera_frame.cpp
+        )
+target_link_libraries(calibration ${Boost_LIBRARIES} dl)
+

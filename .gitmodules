@@ -1,3 +1,6 @@
-[submodule "cpp-toolkit"]
-	path = cpp-toolkit
-	url = https://github.com/tszabo-ro/cpp-toolkit
+[submodule "external/json"]
+	path = external/json
+	url = https://github.com/nlohmann/json.git
+[submodule "external/cpp-toolkit"]
+	path = external/cpp-toolkit
+	url = https://github.com/tszabo-ro/cpp-toolkit.git
