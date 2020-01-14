@@ -7,7 +7,7 @@
 template<class T>
 static std::tuple<std::unique_ptr<cv::VideoCapture>, cv::Mat, cv::Rect2f> getCameraParams(double cam_angle, T device_params)
 {
-  auto capture_device = std::make_unique<cv::VideoCapture>(device_params);
+  auto capture_device = std::make_unique<cv::VideoCapture>(device_params, cv::CAP_ANY);
 
   cv::Mat frame;
   capture_device->grab();
@@ -49,7 +49,14 @@ struct Camera::Internals
 
 Camera::Camera(CameraConfig config)
   : config_(config)
-  , internals_(std::make_unique<Internals>(getCameraParams(config.camera_roll*180/M_PI, cv::CAP_ANY)))
+  , internals_(std::make_unique<Internals>(getCameraParams(config.camera_roll*180/M_PI, 0)))
+{
+  config_ = CameraConfig(config.v_fov, config.h_fov, internals_->rotated_size.x, internals_->rotated_size.y, config.camera_roll, config.camera_pitch, config.ground_height);
+}
+
+Camera::Camera(CameraConfig config, int camera_id)
+  : config_(config)
+  , internals_(std::make_unique<Internals>(getCameraParams(config.camera_roll*180/M_PI, camera_id)))
 {
   config_ = CameraConfig(config.v_fov, config.h_fov, internals_->rotated_size.x, internals_->rotated_size.y, config.camera_roll, config.camera_pitch, config.ground_height);
 }
@@ -59,7 +66,6 @@ Camera::Camera(CameraConfig config, const std::string& video_src)
   , internals_(std::make_unique<Internals>(getCameraParams(config.camera_roll*180/M_PI, video_src)))
 {
   config_ = CameraConfig(config.v_fov, config.h_fov, internals_->rotated_size.x, internals_->rotated_size.y, config.camera_roll, config.camera_pitch, config.ground_height);
-  printf("Camera: vFov: %.1f hFov: %.1f w: %zu h: %zu\n", config_.v_fov*180/M_PI, config_.h_fov*180/M_PI, config_.img_width, config_.img_height);
 }
 
 Camera::~Camera() = default;

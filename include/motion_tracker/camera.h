@@ -10,6 +10,7 @@ class Camera
 {
 public:
   Camera(CameraConfig config);
+  Camera(CameraConfig config, int camera_id);
   Camera(CameraConfig config, const std::string& video_src);
   ~Camera();
 
