@@ -4,6 +4,7 @@
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/calib3d.hpp>
 
 #include <motion_tracker/camera/camera.h>
 #include <motion_tracker/camera/camera_calibration.h>
@@ -148,7 +149,7 @@ int main()
   const Pattern used_pattern = Pattern::Chessboard;
 
   CameraConfig camera_conf(85 * M_PI / 180, 55 * M_PI / 180, 1080, 1920, 0, 0, 0.2);
-  Camera cam(camera_conf, camera_id);
+  Camera cam(camera_conf, CameraCalibration(), camera_id);
 
   const char *window_name = "img";
   namedWindow(window_name, cv::WINDOW_AUTOSIZE);

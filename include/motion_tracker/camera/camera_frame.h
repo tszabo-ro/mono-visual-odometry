@@ -25,6 +25,7 @@ public:
   const cv::Mat& data() const { return data_; }
   const TimeStamp& stamp() const { return stamp_; }
   bool valid() const { return (data_.rows > 0) && (data_.cols > 0); }
+  bool isCompatible(const Frame& other) const { return data_.size() == other.data_.size(); }
 
 private:
   TimeStamp stamp_;

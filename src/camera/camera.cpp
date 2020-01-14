@@ -3,6 +3,7 @@
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <tuple>
+#include <opencv2/calib3d.hpp>
 
 template<class T>
 static std::tuple<std::unique_ptr<cv::VideoCapture>, cv::Mat, cv::Rect2f> getCameraParams(double cam_angle, T device_params)
@@ -47,22 +48,25 @@ struct Camera::Internals
   const cv::Rect2f rotated_size;
 };
 
-Camera::Camera(CameraConfig config)
+Camera::Camera(CameraConfig config, CameraCalibration calibration)
   : config_(config)
+  , calibration_(calibration)
   , internals_(std::make_unique<Internals>(getCameraParams(config.camera_roll*180/M_PI, 0)))
 {
   config_ = CameraConfig(config.v_fov, config.h_fov, internals_->rotated_size.x, internals_->rotated_size.y, config.camera_roll, config.camera_pitch, config.ground_height);
 }
 
-Camera::Camera(CameraConfig config, int camera_id)
+Camera::Camera(CameraConfig config, CameraCalibration calibration, int camera_id)
   : config_(config)
+  , calibration_(calibration)
   , internals_(std::make_unique<Internals>(getCameraParams(config.camera_roll*180/M_PI, camera_id)))
 {
   config_ = CameraConfig(config.v_fov, config.h_fov, internals_->rotated_size.x, internals_->rotated_size.y, config.camera_roll, config.camera_pitch, config.ground_height);
 }
 
-Camera::Camera(CameraConfig config, const std::string& video_src)
+Camera::Camera(CameraConfig config, CameraCalibration calibration, const std::string& video_src)
   : config_(config)
+  , calibration_(calibration)
   , internals_(std::make_unique<Internals>(getCameraParams(config.camera_roll*180/M_PI, video_src)))
 {
   config_ = CameraConfig(config.v_fov, config.h_fov, internals_->rotated_size.x, internals_->rotated_size.y, config.camera_roll, config.camera_pitch, config.ground_height);
@@ -77,10 +81,18 @@ std::optional<Frame> Camera::grab()
     return std::nullopt;
   }
 
-  cv::Mat cv_frame, cv_rotated;
+  cv::Mat cv_frame, cv_corrected, cv_rotated;
   internals_->capture_device->retrieve(cv_frame);
 
-  warpAffine(cv_frame, cv_rotated, internals_->rotation_matrix, internals_->rotated_size.size());
+  if (calibration_.valid())
+  {
+    cv::undistort(cv_frame, cv_corrected, calibration_.camera_matrix, calibration_.dist_coeffs);
+    warpAffine(cv_corrected, cv_rotated, internals_->rotation_matrix, internals_->rotated_size.size());
+  }
+  else
+  {
+    warpAffine(cv_frame, cv_rotated, internals_->rotation_matrix, internals_->rotated_size.size());
+  }
 
   return std::optional<Frame>(std::move(cv_rotated));
 }

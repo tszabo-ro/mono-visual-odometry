@@ -2,7 +2,7 @@
 
 #include <motion_tracker/camera/camera_calibration.h>
 #include <nlohmann/json.hpp>
-
+#include <sstream>
 
 static std::vector<std::vector<double>> mat2stlVec(const cv::Mat& mat)
 {
@@ -32,7 +32,7 @@ CameraCalibration::CameraCalibration()
   dist_coeffs = cv::Mat::zeros(0, 0, CV_64FC1);
 }
 
-CameraCalibration::CameraCalibration(const std::string& file_name):
+CameraCalibration::CameraCalibration(const std::string& file_name)
 {
 
   std::ifstream data_file(file_name);
@@ -43,11 +43,10 @@ CameraCalibration::CameraCalibration(const std::string& file_name):
   }
 
   std::string json_str((std::istreambuf_iterator<char>(data_file)),std::istreambuf_iterator<char>());
-  auto json_data = nlohmann::json::parse(json_str);
+  auto json_data = nlohmann::json::parse(json_str)["calibration"];
 
   camera_matrix = cv::Mat::zeros(3, 3, CV_64FC1);
   dist_coeffs = cv::Mat::zeros(5, 1, CV_64FC1);
-
 
   auto cam_matrix_json = json_data["camera_matrix"];
   for (size_t row_index = 0; row_index < cam_matrix_json.size(); ++row_index)
