@@ -1,5 +1,6 @@
 #include <iostream>
 #include <future>
+#include <fstream>
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
@@ -89,7 +90,7 @@ static double computeReprojectionErrors(
   return std::sqrt(totalErr / totalPoints);
 }
 
-static std::optional<CameraCalibration> runCalibration(cv::Size& board_size, float element_size, Pattern pattern_type,
+static std::optional<CameraCalibration> runCalibration(const cv::Size& board_size, float element_size, Pattern pattern_type,
   const std::vector<std::vector<cv::Point2f>>& recorded_patterns,
   std::vector<float>& reprojection_errors)
 {
@@ -145,8 +146,8 @@ static std::vector<std::vector<double>> mat2stlVec(const cv::Mat& mat)
   return data;
 }
 
-static void saveCameraParams(const CameraCalibration& calibration, size_t n_frames,
-  Pattern calib_pattern, cv::Size& image_size)
+static void saveCameraParams(const std::string file_name, const CameraCalibration& calibration, size_t n_frames,
+  Pattern calib_pattern, const cv::Size& image_size)
 {
   std::vector<std::vector<double>> camera_matrix = mat2stlVec(calibration.camera_matrix);
   std::vector<std::vector<double>> dist_coeffs = mat2stlVec(calibration.dist_coeffs);
@@ -182,23 +183,13 @@ static void saveCameraParams(const CameraCalibration& calibration, size_t n_fram
                         {"dist_coeffs", nlohmann::json(dist_coeffs)},
                         {"rvecs", nlohmann::json(rvecs)},
                         {"tvecs", nlohmann::json(tvecs)},
+                        {"calibration_error", calibration.total_error}
                       }}
     };
 
-  calib.dump();
-}
-
-static std::optional<CameraCalibration> runCalibrationAndSave(cv::Size board_size, float element_size, Pattern calib_pattern,
-  std::vector<std::vector<cv::Point2f>> image_points)
-{
-  std::vector<float> reproj_errs;
-
-  auto result = runCalibration(board_size, element_size, calib_pattern, image_points, reproj_errs);
-  if (result)
-  {
-    saveCameraParams(result.value(), image_points.size(), calib_pattern, board_size);
-  }
-  return result;
+  std::ofstream calib_file(file_name);
+  calib_file << calib.dump(2);
+  calib_file.close();
 }
 
 int main()
@@ -207,6 +198,8 @@ int main()
   const size_t num_images_to_use = 20;
   const cv::Size pattern_size(8, 6); //interior number of corners
   const float square_size = 25;
+
+  const std::string calibration_file = "calib.json";
 
   const Pattern used_pattern = Pattern::Chessboard;
 
@@ -240,7 +233,7 @@ int main()
       cv::Mat img = frame->data().clone();
       cv::TermCriteria criteria = cv::TermCriteria((cv::TermCriteria::COUNT) + (cv::TermCriteria::EPS), 30, 0.1);
 
-      cornerSubPix(img, corners, cv::Size(11, 11), cv::Size(-1, -1), criteria);
+      cornerSubPix(gray_frame.data(), corners, cv::Size(11, 11), cv::Size(-1, -1), criteria);
       drawChessboardCorners(img, pattern_size, cv::Mat(corners), patternfound);
 
       image_points.push_back(std::move(corners));
@@ -250,23 +243,28 @@ int main()
     }
     else
     {
-      cv::imshow(window_name, gray_frame.data());
+      cv::imshow(window_name, frame->data());
     }
 
     cv::waitKey(1);
   }
 
-  cv::Mat camera_matrix;
-  cv::Mat dist_coefficients;
-
   printf("Collected all the images. Running calibration...\n");
-  auto calibration = runCalibrationAndSave(pattern_size, square_size, used_pattern, image_points);
+  std::vector<float> reproj_errs;
+  auto calibration = runCalibration(pattern_size, square_size, used_pattern, image_points, reproj_errs);
+  if (calibration)
+  {
+    saveCameraParams(calibration_file, calibration.value(), image_points.size(), used_pattern, pattern_size);
+  }
+
   printf("Calibration %s\n", calibration ? "succeeded." : "failed.");
 
   bool undistort_frame = true;
 
+  printf("Starting diplay...\n");
   while (true)
   {
+    printf("1\n");
     auto frame = cam.grab();
     if (!frame.has_value())
     {
@@ -278,7 +276,7 @@ int main()
 
     if (undistort_frame && calibration.has_value())
     {
-      undistort(temp, img, camera_matrix, dist_coefficients);
+      undistort(temp, img, calibration->camera_matrix, calibration->dist_coeffs);
     }
 
     cv::imshow(window_name, img);

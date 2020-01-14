@@ -36,7 +36,7 @@ add_executable(app
 target_link_libraries(app ${Boost_LIBRARIES} dl)
 
 add_executable(calibration
-        camera_calibration/camera_calibration.cpp
+        src/calibrate_camera.cpp
         src/camera.cpp
         src/camera_frame.cpp
         )
