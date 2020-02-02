@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.10)
 project(motion_tracker)
 
 add_compile_options(-Wall -std=c++17 -pedantic -Wextra -g)
