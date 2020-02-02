@@ -1,4 +1,5 @@
 #include <motion_tracker/motion_estimation.h>
+#include <algorithm>
 
 std::pair<double, std::vector<bool>> getTurnRateAndValidIndicatorFromFlow(const CameraConfig& params, const std::vector<OpticFlow>& flow)
 {

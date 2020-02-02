@@ -13,6 +13,8 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include <fstream>
+
 
 static const std::string base64_chars =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
