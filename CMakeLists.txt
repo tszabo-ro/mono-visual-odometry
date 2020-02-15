@@ -45,6 +45,7 @@ target_link_libraries(app ${Boost_LIBRARIES} camera dl)
 
 add_executable(calibration
         calibrate_camera.cpp
+        src/web_viewer.cpp
         )
 target_link_libraries(calibration ${Boost_LIBRARIES} camera dl)
 

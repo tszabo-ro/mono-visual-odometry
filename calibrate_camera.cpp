@@ -9,6 +9,8 @@
 #include <motion_tracker/camera/camera.h>
 #include <motion_tracker/camera/camera_calibration.h>
 
+#include <motion_tracker/web_viewer.h>
+
 #include <opencv2/calib3d.hpp>
 #include <nlohmann/json.hpp>
 
@@ -139,6 +141,9 @@ static void saveCameraParams(const std::string file_name, const CameraCalibratio
 
 int main()
 {
+  WebViewer viewer("lo");
+  viewer.run(8080);
+
   const int camera_id = 0;
   const size_t num_images_to_use = 20;
   const cv::Size pattern_size(8, 6); //interior number of corners
@@ -151,21 +156,26 @@ int main()
   CameraConfig camera_conf(85 * M_PI / 180, 55 * M_PI / 180, 1080, 1920, 0, 0, 0.2);
   Camera cam(camera_conf, CameraCalibration(), camera_id);
 
-  const char *window_name = "img";
-  namedWindow(window_name, cv::WINDOW_AUTOSIZE);
+  // const char *window_name = "img";
+  // namedWindow(window_name, cv::WINDOW_AUTOSIZE);
 
   auto initial_frame = cam.grab()->toGray();
 
   std::vector<std::vector<cv::Point2f> > image_points;
   image_points.reserve(num_images_to_use);
 
-  while (image_points.size() < num_images_to_use)
+  auto last_capture_time = std::chrono::system_clock::now();
+
+  while (image_points.size() < num_images_to_use && viewer.running())
   {
     auto frame = cam.grab();
     if (!frame.has_value())
     {
-      break;
+      printf("Got empty frame from the camera!\n");
+      std::this_thread::sleep_for(std::chrono::milliseconds(33));
+      continue;
     }
+
     auto gray_frame = frame->toGray();
 
     std::vector<cv::Point2f> corners; //this will be filled by the detected corners
@@ -181,58 +191,64 @@ int main()
       cornerSubPix(gray_frame.data(), corners, cv::Size(11, 11), cv::Size(-1, -1), criteria);
       drawChessboardCorners(img, pattern_size, cv::Mat(corners), patternfound);
 
-      image_points.push_back(std::move(corners));
-      cv::imshow(window_name, img);
-      printf("%zu/%zu images found. \n", image_points.size(), num_images_to_use);
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - last_capture_time).count() > 1000) 
+      {
+        last_capture_time = std::chrono::system_clock::now();
+        image_points.push_back(std::move(corners));
+        printf("%zu/%zu images found. \n", image_points.size(), num_images_to_use);
+      }
+      viewer.updateFrame(img);
     }
     else
     {
-      cv::imshow(window_name, frame->data());
+      viewer.updateFrame(frame->data());
     }
-
-    cv::waitKey(1);
   }
 
-  printf("Collected all the images. Running calibration...\n");
-  std::vector<float> reproj_errs;
-  auto calibration = runCalibration(pattern_size, square_size, used_pattern, image_points, reproj_errs);
-  if (calibration)
+  if (viewer.running())
   {
-    saveCameraParams(calibration_file, calibration.value(), image_points.size(), used_pattern, pattern_size);
-  }
 
-  printf("Calibration %s\n", calibration ? "succeeded." : "failed.");
-
-  bool undistort_frame = true;
-
-  printf("Starting diplay...\n");
-  while (true)
-  {
-    printf("1\n");
-    auto frame = cam.grab();
-    if (!frame.has_value())
+  printf("Collected all %zu/%zu the images. Running calibration...\n", image_points.size(), num_images_to_use);
+    std::vector<float> reproj_errs;
+    auto calibration = runCalibration(pattern_size, square_size, used_pattern, image_points, reproj_errs);
+    if (calibration)
     {
-      break;
+      saveCameraParams(calibration_file, calibration.value(), image_points.size(), used_pattern, pattern_size);
     }
 
-    auto img = frame->data();
-    cv::Mat temp = img.clone();
+    printf("Calibration %s\n", calibration ? "succeeded." : "failed.");
 
-    if (undistort_frame && calibration.has_value())
+    bool undistort_frame = true;
+
+    printf("Starting diplay...\n");
+    while (viewer.running())
     {
-      undistort(temp, img, calibration->camera_matrix, calibration->dist_coeffs);
+      auto frame = cam.grab();
+      if (!frame.has_value())
+      {
+        continue;
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }
+
+      auto img = frame->data();
+      cv::Mat temp = img.clone();
+
+      if (undistort_frame && calibration.has_value())
+      {
+        undistort(temp, img, calibration->camera_matrix, calibration->dist_coeffs);
+      }
+      
+      viewer.updateFrame(img);
+      char key = 0;
+
+      constexpr char ESC_KEY = 27;
+
+      if (key == ESC_KEY)
+      { break; }
+      if (key == 'u')
+      { undistort_frame = !undistort_frame; }
+
     }
-
-    cv::imshow(window_name, img);
-    char key = cv::waitKey(1);
-
-    constexpr char ESC_KEY = 27;
-
-    if (key == ESC_KEY)
-    { break; }
-    if (key == 'u')
-    { undistort_frame = !undistort_frame; }
 
   }
 
