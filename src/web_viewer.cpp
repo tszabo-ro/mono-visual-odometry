@@ -98,6 +98,7 @@ static std::map<std::string, std::string> getLocalAddresses()
 WebViewer::~WebViewer()
 {
   runner_.join();
+  frame_available_.notify_all();
   updater_.join();
 }
 
