@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <unordered_set>
+#include <unordered_map>
 #include <atomic>
 
 #include <thread>
@@ -39,13 +40,13 @@ public:
   void run(unsigned int port);
   bool running() const { return running_.load(); }
   void stop();
-  void updateFrame(const cv::Mat& frame, const Twist& speed);
+  void updateFrame(const cv::Mat& frame, const std::unordered_map<std::string, std::string>& data = {});
 
 private:
   struct WSFrame
   {
     cv::Mat frame;
-    Twist speed;
+    std::unordered_map<std::string, std::string> data;
   };
 
   void updateClients(const WSFrame& stash);

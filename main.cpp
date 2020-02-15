@@ -130,7 +130,11 @@ int main()
     total_turn += yaw_speed * dt;
     total_dist += linear_speed * dt;
 
-    viewer.updateFrame(disp, {linear_speed, 1.0 / dt, yaw_speed});
+    viewer.updateFrame(disp, {
+      {"x", std::to_string(linear_speed)},
+      {"y", std::to_string(1.0 / dt)},
+      {"th", std::to_string(yaw_speed)}
+      });
     printf("FPS: %.3f Yaw speed: %.5f [deg/s] linear: %.3f [m/s] total: %.2f [deg] %.2f [m]\n", 1.0 / dt, yaw_speed * 180 / M_PI, linear_speed, total_turn*180/M_PI, total_dist);
   }
 

@@ -1,0 +1,64 @@
+
+<!DOCTYPE HTML>
+
+<html>
+   <head>
+      <title>Cam</title>
+      <style>
+          body {
+              font-family: Helvetica Neue, Arial, sans-serif;
+              text-align: left;
+          }
+
+          .wrapper {
+              max-width: 800px;
+              margin: 50px auto;
+          }
+
+          h1 {
+              font-weight: 200;
+              font-size: 3em;
+              margin: 0 0 0.1em 0;
+          }
+
+          h2 {
+              font-weight: 200;
+              font-size: 0.9em;
+              margin: 0 0 50px;
+              color: #999;
+          }
+
+          a {
+              margin-top: 50px;
+              display: block;
+              color: #3e95cd;
+          }
+      </style>
+      <script type = "text/javascript">
+
+        function connectWS() {
+            window.img_ws = new WebSocket("ws://${SERVER_ADDR}:8080/ws");
+            window.img_ws.binaryType = "arraybuffer";
+
+            window.img_ws.onopen = function() {
+                console.log("Websocket is open");
+            };
+
+            window.img_ws.onmessage = function(msg) {
+                var json = JSON.parse(msg.data);
+                image.src = 'data:image/png;base64,' + json['img'];
+            };
+
+            window.img_ws.onclose = function() {
+                console.log("Connection is closed...");
+            };
+        }
+      </script>
+   </head>
+
+   <body onload="connectWS();">
+        <div class="wrapper">
+            <img style="display: block; margin-left: auto; margin-right: auto;" id="image" />
+        </div>
+   </body>
+</html>

@@ -1,5 +1,6 @@
 #include <optional>
 #include <regex>
+#include <sys/stat.h>
 
 #include <motion_tracker/web_viewer.h>
 #include <crow/app.h>
@@ -137,6 +138,40 @@ void WebViewer::stop()
   app_->stop();
 }
 
+
+static bool fileExists(const std::string& name)
+{
+  struct stat buffer;
+  return (stat (name.c_str(), &buffer) == 0);
+}
+
+
+
+static crow::response dispatchResource(const std::string& path, const std::string& server_address)
+////////////////
+// WARNING: Before using this function, make sure that <path> points to a valid file!
+////////////////
+{
+  std::ifstream file(path);
+  std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+  return std::regex_replace(str, std::regex("\\$\\{SERVER_ADDR\\}"), server_address);
+}
+
+static crow::response findAndDispatchResource(const std::string& path, const std::string& server_address)
+{
+  if (fileExists(path))
+  {
+    return dispatchResource(path, server_address);
+  }
+  if (fileExists(path + ".html"))
+  {
+    return dispatchResource(path + ".html", server_address);
+  }
+
+  return crow::response(404);
+}
+
 WebViewer::WebViewer(std::string ext_interface_name)
   : app_(std::make_unique<crow::SimpleApp>())
 {
@@ -153,7 +188,7 @@ WebViewer::WebViewer(std::string ext_interface_name)
     .methods("GET"_method)
       ([interface_addr]()
          {
-           std::ifstream index("index.html");
+           std::ifstream index("resources/index.html");
            std::string str((std::istreambuf_iterator<char>(index)), std::istreambuf_iterator<char>());
 
            return std::regex_replace(str, std::regex("\\$\\{SERVER_ADDR\\}"), interface_addr);
@@ -176,13 +211,26 @@ WebViewer::WebViewer(std::string ext_interface_name)
 //                 {
 //                   processWebsocketMsg(conn, data, is_binary);
 //                 });
+
+
+  CROW_ROUTE((*app_),"/<string>")
+    .methods("GET"_method)
+    ([interface_addr](const std::string& resource){
+        std::string path = "resources/" + resource;
+        if (resource.empty())
+        {
+          path += "index.html";
+        }
+
+        return findAndDispatchResource(path, interface_addr);
+    });
 }
 
-void WebViewer::updateFrame(const cv::Mat& frame, const Twist& speed)
+void WebViewer::updateFrame(const cv::Mat& frame, const std::unordered_map<std::string, std::string>& data)
 {
   WSFrame stash;
   stash.frame = frame.clone();
-  stash.speed = speed;
+  stash.data = data;
 
   std::unique_lock<std::mutex> lock(frame_lock_);
   frame_ = std::optional<WSFrame>(std::move(stash));
@@ -193,23 +241,24 @@ void WebViewer::updateFrame(const cv::Mat& frame, const Twist& speed)
 
 void WebViewer::updateClients(const WSFrame& stash)
 {
-  cv::Mat small_img;
-  cv::resize(stash.frame, small_img, cv::Size(0, 0), 0.5, 0.5, cv::INTER_NEAREST);
+  cv::Mat small_img = stash.frame;
+  // cv::resize(stash.frame, small_img, cv::Size(0, 0), 0.5, 0.5, cv::INTER_NEAREST);
 
   std::vector<uchar> image_buffer;
   cv::imencode(".jpeg", small_img, image_buffer, {cv::IMWRITE_JPEG_QUALITY, 30});
 
   auto img_base64 = base64_encode(image_buffer.data(), image_buffer.size());
 
-  crow::json::wvalue estimates;
-  estimates["x"] = stash.speed.x;
-  estimates["y"] = stash.speed.y;
-  estimates["th"] = stash.speed.theta;
+  crow::json::wvalue data;
+  for (const auto& el : stash.data)
+  {
+    data[el.first] = el.second;
+  }
 
   crow::json::wvalue response;
   response["stamp"] = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
   response["img"] = img_base64;
-  response["estimates"] = std::move(estimates);
+  response["data"] = std::move(data);
 
   std::lock_guard<std::mutex> _(connections_lock_);
   for (const auto& connection : ws_connections_)

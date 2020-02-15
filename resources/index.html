@@ -72,7 +72,7 @@
                 var json = JSON.parse(msg.data);
                 image.src = 'data:image/png;base64,' + json['img'];
 
-                addValues(json['estimates']);
+                addValues(json['data']);
             };
 
             window.img_ws.onclose = function() {
