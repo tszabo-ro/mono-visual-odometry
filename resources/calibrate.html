@@ -35,6 +35,10 @@
           }
       </style>
       <script type = "text/javascript">
+        function processData(data)  {
+            const vel_data = document.getElementById('vel_data');
+            vel_data.innerHTML = "<center>State: " + data['state'] + "</center><br /><center>Got " + data['n_have'] + "/" + data['n_use'] + " frames.</center>";
+        }
 
         function connectWS() {
             window.img_ws = new WebSocket("ws://${SERVER_ADDR}:8080/ws");
@@ -47,6 +51,8 @@
             window.img_ws.onmessage = function(msg) {
                 var json = JSON.parse(msg.data);
                 image.src = 'data:image/png;base64,' + json['img'];
+
+                processData(json['data']);
             };
 
             window.img_ws.onclose = function() {
@@ -58,6 +64,7 @@
 
    <body onload="connectWS();">
         <div class="wrapper">
+            <div id="vel_data"></div>
             <img style="display: block; margin-left: auto; margin-right: auto;" id="image" />
         </div>
    </body>

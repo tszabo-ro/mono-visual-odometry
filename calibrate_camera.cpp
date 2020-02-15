@@ -139,13 +139,29 @@ static void saveCameraParams(const std::string file_name, const CameraCalibratio
   calib_file.close();
 }
 
-int main()
+int main(int argc,  char** argv)
 {
   WebViewer viewer("lo");
   viewer.run(8080);
 
-  const int camera_id = 0;
-  const size_t num_images_to_use = 20;
+  int camera_id = 0;
+  size_t num_images_to_use = 20;
+
+  if (argc > 1)
+  {
+    camera_id = std::stoi(argv[1]);
+  }
+  if (argc > 2)
+  {
+    num_images_to_use = std::stol(argv[2]);
+  }
+
+  std::unordered_map<std::string, std::string> ui_data;
+  ui_data["n_use"] = std::to_string(num_images_to_use);
+  ui_data["n_have"] = "0";
+  ui_data["state"] = "Capturing";
+
+
   const cv::Size pattern_size(8, 6); //interior number of corners
   const float square_size = 25;
 
@@ -197,14 +213,17 @@ int main()
         image_points.push_back(std::move(corners));
         printf("%zu/%zu images found. \n", image_points.size(), num_images_to_use);
       }
-      viewer.updateFrame(img);
+
+      ui_data["n_have"] = std::to_string(image_points.size());
+      viewer.updateFrame(img, ui_data);
     }
     else
     {
-      viewer.updateFrame(frame->data());
+      viewer.updateFrame(frame->data(), ui_data);
     }
   }
 
+  ui_data["state"] = "Displaying";
   if (viewer.running())
   {
 
@@ -237,8 +256,8 @@ int main()
       {
         undistort(temp, img, calibration->camera_matrix, calibration->dist_coeffs);
       }
-      
-      viewer.updateFrame(img);
+
+      viewer.updateFrame(img, ui_data);
       char key = 0;
 
       constexpr char ESC_KEY = 27;
