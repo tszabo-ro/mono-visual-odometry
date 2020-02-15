@@ -2,7 +2,7 @@
 #define CameraCalibration_h
 
 #include <nlohmann/json_fwd.hpp>
-#include <opencv4/opencv2/core/mat.hpp>
+#include <opencv2/core/mat.hpp>
 
 struct CameraCalibration
 {

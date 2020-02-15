@@ -51,7 +51,7 @@ struct Camera::Internals
 Camera::Camera(CameraConfig config, CameraCalibration calibration)
   : config_(config)
   , calibration_(calibration)
-  , internals_(std::make_unique<Internals>(getCameraParams(config.camera_roll*180/M_PI, 0)))
+  , internals_(std::make_unique<Internals>(getCameraParams(config.camera_roll*180/M_PI, "0")))
 {
   config_ = CameraConfig(config.v_fov, config.h_fov, internals_->rotated_size.x, internals_->rotated_size.y, config.camera_roll, config.camera_pitch, config.ground_height);
 }
@@ -59,7 +59,7 @@ Camera::Camera(CameraConfig config, CameraCalibration calibration)
 Camera::Camera(CameraConfig config, CameraCalibration calibration, int camera_id)
   : config_(config)
   , calibration_(calibration)
-  , internals_(std::make_unique<Internals>(getCameraParams(config.camera_roll*180/M_PI, camera_id)))
+  , internals_(std::make_unique<Internals>(getCameraParams(config.camera_roll*180/M_PI, std::to_string(camera_id))))
 {
   config_ = CameraConfig(config.v_fov, config.h_fov, internals_->rotated_size.x, internals_->rotated_size.y, config.camera_roll, config.camera_pitch, config.ground_height);
 }

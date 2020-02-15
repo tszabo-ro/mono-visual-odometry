@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(motion_tracker)
 
-add_compile_options(-Wall -std=c++17 -pedantic -Wextra -g)
+add_compile_options(-Wall -std=c++17 -pedantic -Wextra -g -Wno-psabi)
 find_package(OpenCV REQUIRED )
 find_package(Boost REQUIRED COMPONENTS system thread)
 
