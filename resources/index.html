@@ -61,7 +61,7 @@
         }
 
         function connectWS() {
-            window.img_ws = new WebSocket("ws://${SERVER_ADDR}:8080/ws");
+            window.img_ws = new WebSocket("ws://self.location.host/ws");
             window.img_ws.binaryType = "arraybuffer";
 
             window.img_ws.onopen = function() {
